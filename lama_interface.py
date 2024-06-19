@@ -38,4 +38,4 @@ class ChatModel:
             if "content" in delta:
                 print(delta["content"], end="", flush=True)
         print()
-
+        return delta["content"]

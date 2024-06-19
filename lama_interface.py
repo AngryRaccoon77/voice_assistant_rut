@@ -26,6 +26,7 @@ class ChatModel:
     def interact(self, user_message, temperature):
         user_message = user_message
         self.messages.append({"role": "user", "content": user_message})
+        response = ""
         for part in self.model.create_chat_completion(
                 self.messages,
                 temperature=self.temperature,
@@ -36,6 +37,6 @@ class ChatModel:
         ):
             delta = part["choices"][0]["delta"]
             if "content" in delta:
-                print(delta["content"], end="", flush=True)
-        print()
-        return delta["content"]
+                response += delta["content"]
+        return response
+

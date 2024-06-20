@@ -5,7 +5,7 @@ SYSTEM_PROMPT = "Ты дружелюбный ассистент, ты помог
 
 class ChatModel:
     def __init__(self, model_path="data/modelQ4K.gguf", n_ctx=8192, top_k=30, top_p=0.9, temperature=0.6,
-                 repeat_penalty=1.1, gpu_layers=0):
+                 repeat_penalty=1.1, gpu_layers=26):
         self.model = Llama(
             model_path=model_path,
             n_ctx=n_ctx,
@@ -13,6 +13,7 @@ class ChatModel:
             verbose=True,
             n_predict = 200,
             n_gpu_layers=gpu_layers,
+            main_gpu=0
         )
         self.temperature = temperature
         self.top_k = top_k

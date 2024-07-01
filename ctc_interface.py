@@ -5,6 +5,7 @@ import pyaudio
 import numpy as np
 from nemo.collections.asr.models import EncDecCTCModel
 from preprocessors import AudioToMelSpectrogramPreprocessor
+import noisereduce as nr
 
 class SpeechRecognizer:
     def __init__(self):
@@ -27,9 +28,11 @@ class SpeechRecognizer:
     def calibrate_microphone(self):
         self.stream = self.audio.open(format=self.format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk)
         print("Calibrating... Be quiet!")
-        frames = [self.stream.read(self.chunk) for _ in range(0, int(self.rate / self.chunk * 2))]
+        frames = [self.stream.read(self.chunk) for _ in range(0, int(self.rate / self.chunk * 10))]
         data_int = np.frombuffer(b''.join(frames), dtype=np.int16)
-        new_threshold = np.max(data_int)
+        noise_mean = np.mean(data_int)
+        noise_std = np.std(data_int)
+        new_threshold = noise_mean + 3 * noise_std
         print(f"Calibration complete. New threshold is {new_threshold}")
         self.threshold = new_threshold
         self.stream.stop_stream()
@@ -55,11 +58,21 @@ class SpeechRecognizer:
             elif frames:
                 print("Processing audio...")
                 filename = self.record_audio(frames)
-                transcription = self.model.transcribe([filename])[0]
+                transcription = self.transcribe_with_noise_reduction(filename)
                 print("Recognized by GigaAM:", transcription)
                 frames = []
                 return transcription
 
+    def transcribe_with_noise_reduction(self, filename):
+        waveform, sample_rate = torchaudio.load(filename)
+        waveform = waveform.numpy().flatten()
+        reduced_noise_waveform = nr.reduce_noise(y=waveform, sr=sample_rate)
+        torchaudio.save(filename, torch.tensor(reduced_noise_waveform).unsqueeze(0), sample_rate)
+        transcription = self.model.transcribe([filename])[0]
+        return transcription
+
     def close(self):
         self.stream.stop_stream()
         self.stream.close()
+
+

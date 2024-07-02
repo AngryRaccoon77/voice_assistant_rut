@@ -1,20 +1,34 @@
+import csv
+import os
 import threading
 import flet as ft
 import time
-import csv
-from main import handle_voice_input, record_and_transcribe, synthesize_speech
+from utils import handle_voice_input, record_and_transcribe, synthesize_speech
 
+
+def log_to_csv(transcription, context, response, rating):
+    filename = "chat_log.csv"
+    fieldnames = ['Transcription', 'Context', 'Response', 'Rating']
+
+    # Check if the file exists
+    file_exists = os.path.isfile(filename)
+
+    with open(filename, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+        if not file_exists:
+            writer.writeheader()  # Write the header only once
+
+        writer.writerow(
+            {'Transcription': transcription, 'Context': context, 'Response': response, 'Rating': rating})
 
 class Message:
     def __init__(self, user_name: str, text: str, message_type: str):
         self.user_name = user_name
         self.text = text
         self.message_type = message_type
-
-    def log_interaction(self, question, answer, rating):
-        with open('interactions.csv', 'a', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow([ question, answer, rating])
+        self.context = None
+        self.transcription = None
 
 
 class ChatMessage(ft.Row):
@@ -51,15 +65,26 @@ class ChatMessage(ft.Row):
         ]
 
         if is_bot:
-            self.controls.append(
-                ft.Row(
-                    controls=[
-                        ft.IconButton(ft.icons.THUMB_UP, on_click=lambda e: self.rate_message(message, "like")),
-                        ft.IconButton(ft.icons.THUMB_DOWN, on_click=lambda e: self.rate_message(message, "dislike"))
-                    ]
-                )
+            like_button = ft.IconButton(
+                icon=ft.icons.THUMB_UP,
+                icon_color=ft.colors.WHITE,
+                on_click=lambda e: self.handle_rating(message, "like")
             )
+            dislike_button = ft.IconButton(
+                icon=ft.icons.THUMB_DOWN,
+                icon_color=ft.colors.WHITE,
+                on_click=lambda e: self.handle_rating(message, "dislike")
+            )
+
+            self.controls.append(ft.Row(controls=[like_button, dislike_button]))
+
+        if is_bot:
             self.controls.reverse()
+
+
+    def handle_rating(self, message, rating):
+        log_to_csv(message.transcription, message.context , message.text, rating)
+
 
     def get_initials(self, name: str) -> str:
         return ''.join([part[0].upper() for part in name.split()]) if name else 'S'
@@ -67,13 +92,6 @@ class ChatMessage(ft.Row):
     def get_avatar_color(self, name: str) -> str:
         colors = [ft.colors.RED, ft.colors.GREEN, ft.colors.BLUE]
         return colors[hash(name) % len(colors)]
-
-    def rate_message(self, message, rating):
-        last_user_message = [m for m in self.chat.controls if isinstance(m, ChatMessage) and not m.alignment == ft.MainAxisAlignment.END][-1]
-        question = last_user_message.controls[1].content.controls[1].value
-        answer = message.text
-        message.log_interaction(question, answer, rating)
-        self.page.update()
 
 
 def main(page: ft.Page):
@@ -149,11 +167,16 @@ def main(page: ft.Page):
 
             threading.Thread(target=run_animation).start()
 
+    import re
+    import inflect
+
     def handle_voice():
         animation_state_listing = {"running": True}
         animate_listing(animation_state_listing)
         transcription = record_and_transcribe()
         animation_state_listing["running"] = False
+        if transcription=="":
+            return
 
         user_message = Message("Студент", transcription, message_type="chat_message")
         page.pubsub.send_all(user_message)
@@ -163,8 +186,10 @@ def main(page: ft.Page):
         switch.update()
         animation_state_think = {"running": True}
         animate_think(animation_state_think)
-        answer = handle_voice_input(transcription)
+        answer, context = handle_voice_input(transcription)
         animation_state_think["running"] = False
+
+
 
         bot_response = Message("Норберт", answer, message_type="bot_message")
         page.pubsub.send_all(bot_response)
@@ -179,6 +204,20 @@ def main(page: ft.Page):
 
         switch.content = voice_stack
         switch.update()
+
+        bot_response.context = context
+        bot_response.transcription = transcription
+
+    def replace_numbers_with_words(text):
+        p = inflect.engine()
+
+        def replace(match):
+            number = match.group()
+            number_word = p.number_to_words(number)
+            return f"{number} ({number_word})"
+
+        return re.sub(r'\d+', replace, text)
+
 
     def on_message(message: Message):
         text_size = 16 if page.width < 800 else 20 if page.width <= 1200 else 24

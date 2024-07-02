@@ -208,15 +208,6 @@ def main(page: ft.Page):
         bot_response.context = context
         bot_response.transcription = transcription
 
-    def replace_numbers_with_words(text):
-        p = inflect.engine()
-
-        def replace(match):
-            number = match.group()
-            number_word = p.number_to_words(number)
-            return f"{number} ({number_word})"
-
-        return re.sub(r'\d+', replace, text)
 
 
     def on_message(message: Message):
@@ -353,7 +344,7 @@ def main(page: ft.Page):
 
     gradient_container = ft.Container(
         content=ft.Column(
-            [image_container, chat_container, bottom_container],
+                [image_container, chat_container, bottom_container],
             tight=True,
             spacing=5,
         ),

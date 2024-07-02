@@ -3,7 +3,7 @@ import os
 import threading
 import flet as ft
 import time
-from utils import handle_voice_input, record_and_transcribe, synthesize_speech
+from utils import handle_voice_input, record_and_transcribe, synthesize_speech, replace_numbers_with_words
 
 
 def log_to_csv(transcription, context, response, rating):
@@ -199,7 +199,8 @@ def main(page: ft.Page):
         switch.update()
         animation_state_say = {"running": True}
         animate_say(animation_state_say)
-        synthesize_speech(answer)
+        replace_text = replace_numbers_with_words(answer)
+        synthesize_speech(replace_text)
         animation_state_say["running"] = False
 
         switch.content = voice_stack
@@ -207,16 +208,6 @@ def main(page: ft.Page):
 
         bot_response.context = context
         bot_response.transcription = transcription
-
-    def replace_numbers_with_words(text):
-        p = inflect.engine()
-
-        def replace(match):
-            number = match.group()
-            number_word = p.number_to_words(number)
-            return f"{number} ({number_word})"
-
-        return re.sub(r'\d+', replace, text)
 
 
     def on_message(message: Message):

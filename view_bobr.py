@@ -3,7 +3,7 @@ import os
 import threading
 import flet as ft
 import time
-from utils import handle_voice_input, record_and_transcribe, synthesize_speech
+from utils import handle_voice_input, record_and_transcribe, synthesize_speech, replace_numbers_with_words
 
 
 def log_to_csv(transcription, context, response, rating):
@@ -199,7 +199,8 @@ def main(page: ft.Page):
         switch.update()
         animation_state_say = {"running": True}
         animate_say(animation_state_say)
-        synthesize_speech(answer)
+        replace_text = replace_numbers_with_words(answer)
+        synthesize_speech(replace_text)
         animation_state_say["running"] = False
 
         switch.content = voice_stack
@@ -207,7 +208,6 @@ def main(page: ft.Page):
 
         bot_response.context = context
         bot_response.transcription = transcription
-
 
 
     def on_message(message: Message):
@@ -344,7 +344,7 @@ def main(page: ft.Page):
 
     gradient_container = ft.Container(
         content=ft.Column(
-                [image_container, chat_container, bottom_container],
+            [image_container, chat_container, bottom_container],
             tight=True,
             spacing=5,
         ),

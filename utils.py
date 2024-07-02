@@ -5,6 +5,9 @@ from lama_interface import ChatModel
 from classificator_interface import QuestionClassifier
 from vosk_tts import Model, Synth
 
+import re
+from num2words import num2words
+
 # Инициализация моделей и классов
 model = Model(model_name="vosk-model-tts-ru-0.6-multi")
 synth = Synth(model)
@@ -80,3 +83,6 @@ def handle_voice_input(transcription):
     prev_context = context
     print(answer)
     return answer, context
+
+def replace_numbers_with_words(text):
+    return re.sub(r'\d+', lambda x: num2words(int(x.group()), lang='ru'), text)

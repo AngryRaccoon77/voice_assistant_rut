@@ -167,15 +167,13 @@ def main(page: ft.Page):
 
             threading.Thread(target=run_animation).start()
 
-    import re
-    import inflect
 
     def handle_voice():
         animation_state_listing = {"running": True}
         animate_listing(animation_state_listing)
         transcription = record_and_transcribe()
         animation_state_listing["running"] = False
-        if transcription=="":
+        if transcription==" " or transcription == "" or transcription == None:
             return
 
         user_message = Message("Студент", transcription, message_type="chat_message")

@@ -1,7 +1,7 @@
 Cython==3.0.10
 flet==0.23.2
-llama_cpp_python==0.2.78
-nemo_toolkit[all]
+
+nemo_toolkit[asr]
 nemo-text-processing==0.1.8rc0
 noisereduce==3.0.2
 numpy==1.23.5
@@ -14,4 +14,4 @@ num2words
 torch==2.3.0
 torchvision==0.18.0
 torchaudio==2.3.0
--f https://download.pytorch.org/whl/cu118
+-f https://download.pytorch.org/whl/cu121

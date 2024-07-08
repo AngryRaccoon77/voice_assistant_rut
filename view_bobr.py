@@ -176,7 +176,7 @@ def main(page: ft.Page):
         if transcription==" " or transcription == "" or transcription == None:
             return
 
-        user_message = Message("Студент", transcription, message_type="chat_message")
+        user_message = Message("Вы", transcription, message_type="chat_message")
         page.pubsub.send_all(user_message)
         page.update()
 
